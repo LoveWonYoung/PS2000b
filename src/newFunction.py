@@ -3,24 +3,18 @@ import sys
 import serial
 import ps2000b
 import platform
-import serial.tools.list_ports
-
-
-# 端口捕获
-def comNumber() -> str:
-    port_data = []
-    name = []
-    for port in serial.tools.list_ports.comports():
-        port_data.append(port.description)
-        name.append(port.name)
-    r = zip(port_data, name)
-    print(name)
-    print(port_data)
-    return ""
 
 
 class NewPower:
-    def __init__(self, com: int):
+    _instance = None
+
+    def __new__(cls, com: int, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(NewPower, cls).__new__(cls)
+            cls._instance.initialize(com)
+        return cls._instance
+
+    def initialize(self, com: int):
         self.com = com
         com_connect = "COM{}".format(self.com) if platform.system() == "Windows" else "/dev/ttyACM0"
         print("连接到设备 %s..." % com_connect)
@@ -30,6 +24,8 @@ class NewPower:
             print("设备信息: %s" % self.device.get_device_information())
         except Exception:
             print('没找到端口')
+
+            # 其余方法保持不变...
 
     def open_power(self):  # 打开控制
         self.device.enable_remote_control()
@@ -49,8 +45,11 @@ class NewPower:
         return self.device.get_current()
 
 
+# ...
+
 if __name__ == '__main__':
     parse = argparse.ArgumentParser()
+    # 添加命令行参数...
     parse.add_argument("--com", type=int, help="com")
     parse.add_argument("--a", type=float, help="current")
     parse.add_argument("--v", type=float, help="voltage")
@@ -61,18 +60,18 @@ if __name__ == '__main__':
     parse.add_argument("--pc", action="store_true")
     args = parse.parse_args()
 
-    # p = NewPower(9)
-    if args.open:
-        p.open_power()
-    elif args.close:
-        p.close_power()
-    elif args.gc:
-        p.get_current()
-    elif args.gv:
-        p.get_voltage()
-    elif args.pc:
-        p.control_power(args.v, args.a)
-    else:
-        print("no Function")
+    # 使用指定的COM端口（或默认端口）创建或获取NewPower实例
+    # p = NewPower(args.com if hasattr(args, 'com') else 0)
 
-    comNumber()
+    import serial.tools.list_ports
+
+    ports = []
+    name = []
+    for port in serial.tools.list_ports.comports():
+        ports.append(port.device)
+        name.append(port.description)
+    print(ports)
+    print(name)
+
+    # 根据命令行参数执行相应的操作...
+    # ...
